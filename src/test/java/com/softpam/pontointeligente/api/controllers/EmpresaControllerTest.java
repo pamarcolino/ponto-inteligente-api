@@ -1,11 +1,16 @@
 package com.softpam.pontointeligente.api.controllers;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Optional;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.BDDMockito;
@@ -20,6 +25,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.softpam.pontointeligente.api.entities.Empresa;
 import com.softpam.pontointeligente.api.services.EmpresaService;
@@ -30,8 +36,11 @@ import com.softpam.pontointeligente.api.services.EmpresaService;
 @ActiveProfiles("test")
 public class EmpresaControllerTest {
 
-	@Autowired
+	//@Autowired
 	private MockMvc mvc;
+	
+	@Autowired
+	private EmpresaController empresaController;
 
 	@MockBean
 	private EmpresaService empresaService;
@@ -41,6 +50,27 @@ public class EmpresaControllerTest {
 	private static final String CNPJ = "51463645000100";
 	private static final String RAZAO_SOCIAL = "Empresa XYZ";
 
+	@Before
+    public void setUp() {
+        mvc = MockMvcBuilders
+                .standaloneSetup(empresaController)
+                .build();
+    }
+	
+	@Test
+	@WithMockUser
+    public void shouldReturnDefaultMessage() throws Exception {
+        //this.mvc.perform(get(BU)).andDo(print()).andExpect(status().isOk())
+        //        .andExpect(content().string(containsString("Hello World")));
+        
+        BDDMockito.given(this.empresaService.buscarPorCnpj(Mockito.anyString())).willReturn(Optional.empty());
+
+		mvc.perform(get(BUSCAR_EMPRESA_CNPJ_URL + CNPJ).accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors").value("Empresa não encontrada para o CNPJ " + CNPJ));
+    }
+	
+	
 	@Test
 	@WithMockUser
 	public void testBuscarEmpresaCnpjInvalido() throws Exception {
